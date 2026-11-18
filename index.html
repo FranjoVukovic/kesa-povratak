@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Kesa – povratak iz banke</title>
+<style>
+  :root {
+    --papir: #ffffff;
+    --kocka: #dde6f1;
+    --tinta: #1d1d22;
+    --plava: #1d3fa6;
+    --crvena: #bf2a2f;
+    --siva: #5a6070;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papir: #17191e;
+      --kocka: #242932;
+      --tinta: #ebe8e1;
+      --plava: #92abff;
+      --crvena: #ff8078;
+      --siva: #a3a9b6;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--papir);
+    background-image:
+      linear-gradient(var(--kocka) 1px, transparent 1px),
+      linear-gradient(90deg, var(--kocka) 1px, transparent 1px);
+    background-size: 22px 22px;
+    color: var(--tinta);
+    font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 30rem; margin: 0 auto; padding: 14vh 16px 48px; }
+  h1 {
+    font-family: "Coming Soon", casual, "Segoe Print", "Bradley Hand", cursive;
+    font-weight: 400;
+    font-size: 2.1rem;
+    line-height: 1.2;
+    margin: 0 0 0.6rem;
+  }
+  p { margin: 0 0 1rem; max-width: 34ch; }
+  .tiho { color: var(--siva); font-size: 0.92rem; }
+  .kod {
+    display: block;
+    margin: 1.4rem 0 1rem;
+    padding: 0.9rem 1rem;
+    border: 1.5px solid var(--plava);
+    border-radius: 3px;
+    background: var(--papir);
+    color: var(--plava);
+    font: 600 1.05rem/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    word-break: break-all;
+    user-select: all;
+  }
+  .gumbi { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  a.gumb, button.gumb {
+    appearance: none;
+    display: inline-block;
+    padding: 0.7rem 1.1rem;
+    border: 1.5px solid var(--tinta);
+    border-radius: 3px;
+    background: var(--papir);
+    color: var(--tinta);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  a.gumb.glavni { background: var(--tinta); color: var(--papir); }
+  a.gumb:focus-visible, button.gumb:focus-visible { outline: 3px solid var(--plava); outline-offset: 2px; }
+  .greska h1 { color: var(--crvena); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <section id="uspjeh" hidden>
+    <h1>Zaba je povezana.</h1>
+    <p>Vrati se u Kesu. Ako se ne otvori sama, prepiši ovaj kod.</p>
+    <code class="kod" id="kod"></code>
+    <div class="gumbi">
+      <a class="gumb glavni" id="otvori" href="#">Otvori Kesu</a>
+      <button class="gumb" id="kopiraj" type="button">Kopiraj kod</button>
+    </div>
+    <p class="tiho" id="nema-aplikacije" hidden>Kesa još nije instalirana na ovom uređaju. Kod prepiši ručno.</p>
+    <p class="tiho">Kod vrijedi nekoliko minuta i radi samo uz ključ koji je u Kesi.</p>
+  </section>
+
+  <section id="greska" class="greska" hidden>
+    <h1>Povezivanje nije uspjelo.</h1>
+    <p id="greska-tekst"></p>
+    <p class="tiho">Pokreni povezivanje ponovno iz Kese.</p>
+  </section>
+
+  <section id="prazno" hidden>
+    <h1>Kesa</h1>
+    <p>Ovdje se banka vraća nakon što odobriš pristup u m-zabi. Stranica ništa ne sprema i ništa ne šalje dalje.</p>
+  </section>
+</main>
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var code = q.get("code");
+    var state = q.get("state") || "";
+    var error = q.get("error");
+
+    if (code) {
+      document.getElementById("uspjeh").hidden = false;
+      var kod = document.getElementById("kod");
+      kod.textContent = code;
+      kod.setAttribute("aria-label", "kesa-kod:" + code + ";stanje:" + state);
+
+      var fallback = location.origin + location.pathname + "?code=" + encodeURIComponent(code) +
+        "&state=" + encodeURIComponent(state) + "#nema-aplikacije";
+      document.getElementById("otvori").href =
+        "intent://povratak?code=" + encodeURIComponent(code) + "&state=" + encodeURIComponent(state) +
+        "#Intent;scheme=kesa;package=hr.kesa;S.browser_fallback_url=" + encodeURIComponent(fallback) + ";end";
+
+      if (location.hash === "#nema-aplikacije") {
+        document.getElementById("nema-aplikacije").hidden = false;
+      }
+
+      var gumb = document.getElementById("kopiraj");
+      gumb.addEventListener("click", function () {
+        if (!navigator.clipboard) { return; }
+        navigator.clipboard.writeText(code).then(function () {
+          gumb.textContent = "Kopirano";
+        });
+      });
+    } else if (error) {
+      document.getElementById("greska").hidden = false;
+      var opis = q.get("error_description");
+      document.getElementById("greska-tekst").textContent = opis ? error + ": " + opis : error;
+    } else {
+      document.getElementById("prazno").hidden = false;
+    }
+  })();
+</script>
+</body>
+</html>
